@@ -5,6 +5,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ring/ring-core "1.11.0"]
                  [ring/ring-jetty-adapter "1.11.0"]
+                 [jakarta.servlet/jakarta.servlet-api "5.0.0"]
                  [compojure "1.7.0"]
                  [ring/ring-defaults "0.3.4"]
                  [clj-http "3.12.3"]

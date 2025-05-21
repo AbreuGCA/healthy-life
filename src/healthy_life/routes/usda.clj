@@ -17,16 +17,18 @@
 
 (defn calorias-por-100g [alimento]
   (let [nutrientes (:foodNutrients alimento)
-        energia    (first
-                     (filter (fn [{:keys [nutrientName]}]
-                               (= nutrientName "Energy"))
-                             nutrientes))
-        value      (or (:value energia) 0)
-        unit       (or (:unitName energia) "")]
-    (cond
-      (re-matches #"(?i)kcal" unit) (double value)
-      (re-matches #"(?i)kj" unit)   (double (/ value 4.184))
-      :else                          0.0)))
+        energia    (first (filter #(= "Energy" (get-in % [:nutrient :name])) nutrientes))]
+    (if energia
+      (let [value (or (:amount energia) 0)
+            unit (get-in energia [:nutrient :unitName] "")]
+        ;DEBUG -> (println "Energia encontrada -" value unit)
+        (cond
+          (re-matches #"(?i)kcal" unit) (double value)
+          (re-matches #"(?i)kj" unit) (double (/ value 4.184))
+          :else (do (println "Unidade desconhecida:" unit) 0.0)))
+      ;DEBUG -> (do (println "DEBUG: Nenhum 'Energy' encontrado") 0.0)
+      )))
+
 
 (defn calcular-calorias [kcal100g gramas]
   (* (/ kcal100g 100.0) gramas))
