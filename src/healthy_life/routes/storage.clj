@@ -1,8 +1,13 @@
 (ns healthy-life.routes.storage
   (:require [compojure.core :refer :all]
+            [clojure.string :as str]
             [healthy-life.state :refer [app-state]]))
 
-;; ======== ROTAS DE ARMAZENAMENTO ========
+(defn entre-datas? [data inicio fim]
+  (and (not (str/blank? data))
+       (>= (compare data inicio) 0)
+       (<= (compare data fim) 0)))
+
 (defroutes storage-routes
            (POST "/salvar-usuario" request
              (let [usuario (:body request)]
@@ -27,4 +32,24 @@
                    datas-alimentos (distinct (map :data (:alimentos dados)))
                    datas-exercicios (distinct (map :data (:exercicios dados)))
                    datas (distinct (concat datas-alimentos datas-exercicios))]
-               {:status 200 :body {:datas (sort datas)}})))
+               {:status 200 :body {:datas (sort datas)}}))
+
+           (GET "/extrato" [inicio fim]
+             (let [{:keys [usuarios alimentos exercicios]} @app-state
+                   alimentos-filtrados (filter #(entre-datas? (:data %) inicio fim) alimentos)
+                   exercicios-filtrados (filter #(entre-datas? (:data %) inicio fim) exercicios)]
+               {:status 200
+                :body {:usuarios usuarios
+                       :alimentos alimentos-filtrados
+                       :exercicios exercicios-filtrados}}))
+
+           (GET "/saldo" [inicio fim]
+             (let [{:keys [alimentos exercicios]} @app-state
+                   alimentos-filtrados (filter #(entre-datas? (:data %) inicio fim) alimentos)
+                   exercicios-filtrados (filter #(entre-datas? (:data %) inicio fim) exercicios)
+                   total-alimentos (reduce + (map :kcal alimentos-filtrados))
+                   total-exercicios (reduce + (map :calorias exercicios-filtrados))]
+               {:status 200
+                :body {:consumido total-alimentos
+                       :gasto total-exercicios
+                       :saldo (- total-alimentos total-exercicios)}})))
