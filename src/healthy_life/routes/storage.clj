@@ -36,8 +36,8 @@
 
            (GET "/extrato" [inicio fim]
              (let [dados @app-state
-                   alimentos (filter #(and (>= (:data %) inicio) (<= (:data %) fim)) (:alimentos dados))
-                   exercicios (filter #(and (>= (:data %) inicio) (<= (:data %) fim)) (:exercicios dados))
+                   alimentos (filter #(entre-datas? (:data %) inicio fim) (:alimentos dados))
+                   exercicios (filter #(entre-datas? (:data %) inicio fim) (:exercicios dados))
                    usuarios (:usuarios dados)
                    total-consumido (reduce + (map :kcal alimentos))
                    total-gasto (reduce + (map :calorias exercicios))
