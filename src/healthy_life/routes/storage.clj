@@ -35,13 +35,20 @@
                {:status 200 :body {:datas (sort datas)}}))
 
            (GET "/extrato" [inicio fim]
-             (let [{:keys [usuarios alimentos exercicios]} @app-state
-                   alimentos-filtrados (filter #(entre-datas? (:data %) inicio fim) alimentos)
-                   exercicios-filtrados (filter #(entre-datas? (:data %) inicio fim) exercicios)]
+             (let [dados @app-state
+                   alimentos (filter #(and (>= (:data %) inicio) (<= (:data %) fim)) (:alimentos dados))
+                   exercicios (filter #(and (>= (:data %) inicio) (<= (:data %) fim)) (:exercicios dados))
+                   usuarios (:usuarios dados)
+                   total-consumido (reduce + (map :kcal alimentos))
+                   total-gasto (reduce + (map :calorias exercicios))
+                   saldo (- total-consumido total-gasto)]
                {:status 200
                 :body {:usuarios usuarios
-                       :alimentos alimentos-filtrados
-                       :exercicios exercicios-filtrados}}))
+                       :alimentos alimentos
+                       :exercicios exercicios
+                       :saldo saldo
+                       :consumido total-consumido
+                       :gasto total-gasto}}))
 
            (GET "/saldo" [inicio fim]
              (let [{:keys [alimentos exercicios]} @app-state
