@@ -32,8 +32,8 @@
         (cond
           (re-matches #"(?i)kcal" unit) (double value)
           (re-matches #"(?i)kj" unit)   (double (/ value 4.184))
-          :else (do (println "Unidade desconhecida:" unit) 0.0)))
-      0.0)))
+          :else -1))
+      -2)))
 
 (defroutes usda-routes
            (GET "/buscar-alimentos" [termo]
