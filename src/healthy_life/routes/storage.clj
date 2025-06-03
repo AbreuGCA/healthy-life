@@ -20,4 +20,11 @@
                {:status 200 :body {:mensagem "Exercício registrado!"}}))
 
            (GET "/obter-dados" []
-             {:status 200 :body @app-state}))
+             {:status 200 :body @app-state})
+
+           (GET "/datas-disponiveis" []
+             (let [dados @app-state
+                   datas-alimentos (distinct (map :data (:alimentos dados)))
+                   datas-exercicios (distinct (map :data (:exercicios dados)))
+                   datas (distinct (concat datas-alimentos datas-exercicios))]
+               {:status 200 :body {:datas (sort datas)}})))
