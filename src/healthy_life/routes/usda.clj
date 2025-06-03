@@ -1,19 +1,27 @@
 (ns healthy-life.routes.usda
   (:require [compojure.core :refer :all]
             [clj-http.client :as client]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [healthy-life.routes.translate :refer [traduzir-texto]]))  ; Importa serviço de tradução
 
 (def api-key "9TQiNewIqPmRVRCFOy5vdR8Ld3ktO75Bxy6OWLmj")
 (def base-url "https://api.nal.usda.gov/fdc/v1")
 
+;; ======== FUNÇÃO AUSENTE ADICIONADA ========
+(defn calcular-calorias [kcal100g gramas]
+  (* (/ kcal100g 100.0) gramas))
+
 (defn buscar-alimentos [termo]
-  (let [params   {:query     termo
+  (let [termo-en (traduzir-texto termo "pt" "en")  ; Traduz termo PT→EN
+        params   {:query     termo-en
                   :pageSize  10
                   :dataType ["SR Legacy"]
                   :api_key   api-key}
         response (client/get (str base-url "/foods/search") {:query-params params})
-        dados    (json/parse-string (:body response) true)]
-    (get dados :foods)))
+        dados    (json/parse-string (:body response) true)
+        alimentos (get dados :foods)]
+    ;; Traduz todas as descrições EN→PT
+    (mapv #(update % :description traduzir-texto "en" "pt") alimentos)))
 
 (defn calorias-por-100g [alimento]
   (let [nutrientes (:foodNutrients alimento)
@@ -27,12 +35,10 @@
           :else (do (println "Unidade desconhecida:" unit) 0.0)))
       0.0)))
 
-(defn calcular-calorias [kcal100g gramas]
-  (* (/ kcal100g 100.0) gramas))
-
 (defroutes usda-routes
            (GET "/buscar-alimentos" [termo]
-             (let [resultados    (buscar-alimentos termo)
+             (let [resultados (buscar-alimentos termo)
+                   ;; Mantém apenas campos necessários (já traduzidos)
                    simplificados (mapv #(select-keys % [:description :fdcId]) resultados)]
                {:status 200 :body {:alimentos simplificados}}))
 
@@ -40,9 +46,11 @@
              (let [response (client/get (str base-url "/food/" fdcId)
                                         {:query-params {:api_key api-key}})
                    alimento (json/parse-string (:body response) true)
-                   kcal100g (calorias-por-100g alimento)]
-               {:status 200 :body {:descricao       (:description alimento)
-                                   :kcal-por-100g   kcal100g}}))
+                   kcal100g (calorias-por-100g alimento)
+                   ;; Traduz descrição do alimento EN→PT
+                   descricao-pt (traduzir-texto (:description alimento) "en" "pt")]
+               {:status 200 :body {:descricao     descricao-pt
+                                   :kcal-por-100g kcal100g}}))
 
            (POST "/calcular-calorias" request
              (let [{:keys [fdcId gramas]} (:body request)
@@ -50,8 +58,9 @@
                                         {:query-params {:api_key api-key}})
                    alimento (json/parse-string (:body response) true)
                    kcal100g (calorias-por-100g alimento)
-                   calorias (calcular-calorias kcal100g gramas)]
+                   calorias (calcular-calorias kcal100g gramas)
+                   descricao-pt (traduzir-texto (:description alimento) "en" "pt")]
                {:status 200
-                :body   {:descricao (:description alimento)
+                :body   {:descricao descricao-pt
                          :gramas    gramas
                          :kcal      (Math/round calorias)}})))
