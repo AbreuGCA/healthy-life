@@ -50,17 +50,4 @@
                    ;; Traduz descrição do alimento EN→PT
                    descricao-pt (traduzir-texto (:description alimento) "en" "pt")]
                {:status 200 :body {:descricao     descricao-pt
-                                   :kcal-por-100g kcal100g}}))
-
-           (POST "/calcular-calorias" request
-             (let [{:keys [fdcId gramas]} (:body request)
-                   response (client/get (str base-url "/food/" fdcId)
-                                        {:query-params {:api_key api-key}})
-                   alimento (json/parse-string (:body response) true)
-                   kcal100g (calorias-por-100g alimento)
-                   calorias (calcular-calorias kcal100g gramas)
-                   descricao-pt (traduzir-texto (:description alimento) "en" "pt")]
-               {:status 200
-                :body   {:descricao descricao-pt
-                         :gramas    gramas
-                         :kcal      (Math/round calorias)}})))
+                                   :kcal-por-100g kcal100g}})))

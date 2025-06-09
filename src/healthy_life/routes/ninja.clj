@@ -6,10 +6,11 @@
 (def api-key "Z0BnVuK4EXYbLw3WcyKoOw==sMa1Uk7DsonyFJQF")
 (def base-url "https://api.api-ninjas.com/v1/caloriesburned")
 
-(defn buscar-atividades [atividade peso duracao]
-  (let [atividade-en (traduzir-texto atividade "pt" "en")  ; Traduz PT→EN
+(defn buscar-atividades [atividade peso-kg duracao]
+  (let [atividade-en (traduzir-texto atividade "pt" "en")
+        peso-lb (* peso-kg 2.20462)
         params {:query-params {:activity atividade-en
-                               :weight peso
+                               :weight peso-lb
                                :duration duracao}
                 :headers {"X-Api-Key" api-key}
                 :throw-exceptions false
@@ -26,11 +27,4 @@
                    variantes (buscar-atividades atividade peso duracao)
                    ;; Mantém apenas campos necessários (já traduzidos)
                    simplificado (mapv #(select-keys % [:name :duration_minutes :total_calories]) variantes)]
-               {:status 200 :body {:variantes simplificado}}))
-
-           (POST "/calorias-atividade" request
-             (let [{:keys [name duration_minutes total_calories]} (:body request)]
-               {:status 200
-                :body {:atividade name
-                       :duracao duration_minutes
-                       :calorias total_calories}})))
+               {:status 200 :body {:variantes simplificado}})))
